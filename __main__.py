@@ -1,6 +1,6 @@
 import importlib.resources
 import json
-from pprint import pprint
+# from pprint import pprint
 import sqlite3
 import sxml
 import sys
@@ -27,16 +27,12 @@ edges_query = (query_files/'edges.sql').read_text()
 
 tables = {}
 for table, column, type, pk, snowflakes in db.execute(columns_query):
-  t = tables.setdefault(table, {})
-  cols = t.setdefault('columns', [])
-  cols.append({
+  tables.setdefault(table, []).append({
     'name': column,
     'type': type,
     'pk?': bool(pk),
     'snowflakes': snowflakes
   })
-  if snowflakes is not None:
-    t.setdefault('snowflakes', set()).add(snowflakes)
 
 edges = []
 for from_table, from_column, to_table, to_column in db.execute(edges_query):
@@ -92,16 +88,17 @@ print('digraph {')
 print('rankdir = LR;')
 print('node [fontname="Helvetica"];')
 
-for name, table in tables.items():
-  table = sxml_from_table(
-      name, table['columns'], len(table.get('snowflakes', set())))
+for table_name, columns in tables.items():
+  num_distinct_snowflakes = len(
+    set(c['snowflakes'] for c in columns if c['snowflakes'] is not None))
+  table = sxml_from_table(table_name, columns, num_distinct_snowflakes)
   # pprint(table)
   element = sxml.element_from_sexpr(table)
   markup = ElementTree.tostring(
       element,
       encoding='unicode',
       short_empty_elements=False)
-  print(dot_node(name, markup))
+  print(dot_node(table_name, markup))
 
 print()
 
