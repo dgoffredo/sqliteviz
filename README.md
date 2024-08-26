@@ -17,7 +17,7 @@ $ python ./ example/schema.sql | dot -Tsvg >example/schema.svg
 - 🔑 means that a column is part of the primary key.
 - ❄️ means that a column is part of a unique index. If a column belongs to more
   than one unique index, then the indices will be indicated by integer
-  superscripts above the snowflake, e.g. ❄️¹ ² ⁴ of the column belongs to the
+  superscripts above the snowflake, e.g. ❄️¹ ² ⁴ if the column belongs to the
   first, second, and fourth unique index defined on the table.
 - Edges between tables are foreign key constraints.
 
