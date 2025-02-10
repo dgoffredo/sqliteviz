@@ -25,7 +25,8 @@ query_files = importlib.resources.files('sql')
 columns_query = (query_files/'columns.sql').read_text()
 edges_query = (query_files/'edges.sql').read_text()
 
-tables = {}
+tables = {} # table name -> [{column info}, ...]
+primary_keys = {} # table name -> [column name, ...]
 for table, column, type, pk, snowflakes in db.execute(columns_query):
   tables.setdefault(table, []).append({
     'name': column,
@@ -33,9 +34,23 @@ for table, column, type, pk, snowflakes in db.execute(columns_query):
     'pk?': bool(pk),
     'snowflakes': snowflakes
   })
+  if pk:
+    primary_keys.setdefault(table, []).append(column)
 
 edges = []
-for from_table, from_column, to_table, to_column in db.execute(edges_query):
+for from_table, from_column, key_seq_num, to_table, to_column in db.execute(edges_query):
+  # If `to_column` is `None` (null), then that means the syntax "references
+  # some_table" was used instead of
+  # "references some_table(some, key, columns)".
+  # It's a shorthand where the missing "some, key, columns" is implicitly
+  # understood to be the referenced table's primary key.
+  # We took account of the `primary_keys` above. If `to_column` is `None`, then
+  # find the primary key column that corresponds to the `key_seq_num` (sequence
+  # number, i.e. zero-based tuple offset) of the current foreign key
+  # constraint.
+  if to_column is None:
+    to_column = primary_keys[to_table][key_seq_num]
+
   edges.append((from_table, from_column, to_table, to_column))
 
 

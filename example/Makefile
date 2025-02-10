@@ -1,3 +1,6 @@
-schema.svg: schema.sql ../__main__.py
-	python ../ schema.sql | dot -Tsvg >schema.svg
+.PHONY: all
+all: schema.svg gnupg.svg multikey.svg
+
+%.svg: %.sql ../__main__.py
+	python ../ $< | dot -Tsvg >$@
 

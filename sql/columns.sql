@@ -21,7 +21,11 @@ ColumnSnowflakes as (
 select
   tbl.name as "table",
   tinfo.name as "column",
-  lower(tinfo.type) || case when tinfo."notnull" then '' else '?' end as "type",
+  -- If there's no type information, use the pseudotype 'any'.
+  -- `pragma_table_xinfo` indicates this with an empty string rather than with
+  -- null.
+  -- If the column is nullable, then append a question mark (e.g. 'text?').
+  lower(case when tinfo.type = '' then 'any' else tinfo.type end) || case when tinfo."notnull" then '' else '?' end as "type",
   tinfo.pk as "pk",
   snow.snowflakes as "snowflakes"
 from pragma_table_list() tbl
